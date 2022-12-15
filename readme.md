@@ -3,7 +3,7 @@
 Have a look [here](https://developer.apple.com/metal/tensorflow-plugin/)
 
 > Or you can optionally install [Miniforge3](https://github.com/conda-forge/miniforge/)\
-> More hands on elaboration can be found [here](https://github.com/mrdbourke/m1-machine-learning-test)
+> More hands on elaboration can be found [here](https://github.com/mrdbourke/m1-machine-learning-test)\
 > My recommendation is to use **miniconda3**
 
 ## More on installing conda, creating conda environment, tensorflow and other libs
@@ -17,7 +17,11 @@ Have a look [here](https://developer.apple.com/metal/tensorflow-plugin/)
 
 ## Now it's time for opencv
 6. Installing naively opencv for m1 will fail terribly. But there is a workaround. Building from the source.
+Follow [this](https://caffeinedev.medium.com/building-and-installing-opencv-on-m1-macbook-c4654b10c188)
 
+## mediapipe
+7. Use protobuf==3.20.1\
+``pip install protobuf==3.20.1``
 
 Other regular packages can be installed through **requirements.txt** using pip's recursive flag
 > ``pip install -r requirements.txt``
