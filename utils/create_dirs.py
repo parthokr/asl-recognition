@@ -1,2 +1,2 @@
 DATA_PATH = 'MP_Data'
-actions = []
+actions = ["hello", "iloveyou", "thanks"]
