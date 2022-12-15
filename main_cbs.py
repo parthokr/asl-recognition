@@ -4,14 +4,29 @@ from typing import NamedTuple
 import cv2
 import mediapipe as mp
 import numpy as np
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.callbacks import TensorBoard
 
 mp_holistic = mp.solutions.holistic
 mp_drawing = mp.solutions.drawing_utils
 
 
 class ASL:
-    def __int__(self):
-        pass
+    def __init__(self):
+        self.y_test = None
+        self.y_train = None
+        self.x_test = None
+        self.x_train = None
+        self.y = None
+        self.x = None
+        self.actions = np.array(["hello", "thanks", "iloveyou"])
+        self.DATA_PATH = 'MP_Data'
+        self.no_sequences = 30
+        self.sequence_length = 30
+        self.start_folder = 0
 
     def mediapipe_detection(self, image, model):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -55,15 +70,10 @@ class ASL:
         return results
 
     def save_data(self):
-        DATA_PATH = 'MP_Data'
-        actions = np.array(["hello", "thanks", "iloveyou"])
-        no_sequences = 30
-        sequence_length = 30
-        start_folder = 0
-        for action in actions:
-            for sequence in range(no_sequences):
+        for action in self.actions:
+            for sequence in range(self.no_sequences):
                 try:
-                    os.makedirs(os.path.join(DATA_PATH, action, str(sequence)))
+                    os.makedirs(os.path.join(self.DATA_PATH, action, str(sequence)))
                 except:
                     pass
 
@@ -73,11 +83,11 @@ class ASL:
 
             # NEW LOOP
             # Loop through actions
-            for action in actions:
+            for action in self.actions:
                 # Loop through sequences aka videos
-                for sequence in range(start_folder, start_folder + no_sequences):
+                for sequence in range(self.start_folder, self.start_folder + self.no_sequences):
                     # Loop through video length aka sequence length
-                    for frame_num in range(sequence_length):
+                    for frame_num in range(self.sequence_length):
 
                         # Read feed
                         ret, frame = cap.read()
@@ -107,7 +117,7 @@ class ASL:
 
                         # NEW Export keypoints
                         keypoints = self.extract_keypoints(results)
-                        npy_path = os.path.join(DATA_PATH, action, str(sequence), str(frame_num))
+                        npy_path = os.path.join(self.DATA_PATH, action, str(sequence), str(frame_num))
                         np.save(npy_path, keypoints)
 
                         # Break gracefully
@@ -117,8 +127,38 @@ class ASL:
             cap.release()
             cv2.destroyAllWindows()
 
+    def preprocess_data(self):
+        label_map = {label: num for num, label in enumerate(self.actions)}
+        # print(label_map)
+        features, labels = [], []
+        for action in self.actions:
+            for sequence in range(self.no_sequences):
+                window = []
+                for frame_num in range(self.sequence_length):
+                    res = np.load(os.path.join(self.DATA_PATH, action, str(sequence), f"{frame_num}.npy"))
+                    window.append(res)
+                features.append(window)
+                labels.append(label_map[action])
+
+        # print(labels)
+        # print(len(labels))
+        # print(np.array(features).shape)
+
+        self.x = np.array(features)
+        self.y = to_categorical(labels)
+
+        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x, self.y, test_size=0.05)
+
+        # print(x)
+        # print(y)
+
+    def train_lstm(self):
+        pass
+
 
 if __name__ == '__main__':
     asl = ASL()
     # asl.run_cv()
     # asl.save_data()
+    asl.preprocess_data()
+    asl.train_lstm()
