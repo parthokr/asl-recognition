@@ -10,6 +10,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.callbacks import TensorBoard
 
+from sklearn.metrics import multilabel_confusion_matrix, accuracy_score
+
 mp_holistic = mp.solutions.holistic
 mp_drawing = mp.solutions.drawing_utils
 
@@ -23,11 +25,23 @@ class ASL:
         self.x_train = None
         self.y = None
         self.x = None
-        self.actions = np.array(["hello", "thanks", "iloveyou"])
+        self.actions = np.array(["A", "B", "C"])
         self.DATA_PATH = 'MP_Data'
         self.no_sequences = 30
         self.sequence_length = 30
         self.start_folder = 0
+
+        self.log_dir = os.path.join("logs")
+        self.tb_callback = TensorBoard(log_dir=self.log_dir)
+
+        self.model = Sequential()
+        self.model.add(LSTM(64, return_sequences=True, activation='relu', input_shape=(30, 1662)))
+        self.model.add(LSTM(128, return_sequences=True, activation='relu'))
+        self.model.add(LSTM(64, return_sequences=False, activation='relu'))
+        self.model.add(Dense(64, activation='relu'))
+        self.model.add(Dense(32, activation='relu'))
+        self.model.add(Dense(self.actions.shape[0], activation='softmax'))
+
 
     def mediapipe_detection(self, image, model):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -69,6 +83,21 @@ class ASL:
             cap.release()
             cv2.destroyAllWindows()
         return results
+
+    def extract_keypoints(self, results: NamedTuple) -> NamedTuple:
+        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() \
+            if results.pose_landmarks else np.zeros(33 * 4)
+
+        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() \
+            if results.face_landmarks else np.zeros(468 * 3)
+
+        left_hand = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() \
+            if results.left_hand_landmarks else np.zeros(21 * 3)
+
+        right_hand = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() \
+            if results.right_hand_landmarks else np.zeros(21 * 3)
+
+        return np.concatenate([pose, face, left_hand, right_hand])
 
     def save_data(self):
         for action in self.actions:
@@ -154,28 +183,57 @@ class ASL:
         # print(y)
 
     def train_lstm(self):
-        log_dir = os.path.join("logs")
-        tb_callback = TensorBoard(log_dir=log_dir)
+        self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
-        model = Sequential()
-        model.add(LSTM(64, return_sequences=True, activation='relu', input_shape=(30, 1662)))
-        model.add(LSTM(128, return_sequences=True, activation='relu'))
-        model.add(LSTM(64, return_sequences=False, activation='relu'))
-        model.add(Dense(64, activation='relu'))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(self.actions.shape[0], activation='softmax'))
+        self.model.fit(self.x_train, self.y_train, epochs=2000, callbacks=[tb_callback])
 
-        model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+        print(self.model.summary())
 
-        model.fit(self.x_train, self.y_train, epochs=2000, callbacks=[tb_callback])
+    def eval_using_confusion_matrix(self):
+        pass
 
-        print(model.summary())
-        self.model = model
+    def test(self):
+        self.model.load_weights('action.h5')
+        sequence = []
+        sentence = []
+        threshold = 0.4
+
+
+        cap = cv2.VideoCapture(0)
+
+        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+            while cap.isOpened():
+                ret, frame = cap.read()
+
+                # Make detections
+                image, results = self.mediapipe_detection(frame, holistic)
+                # print(results)
+
+                # Draw landmarks
+                self.draw_landmarks(image, results)
+
+                # Prediction logic
+                keypoints = self.extract_keypoints(results)
+                sequence.insert(0, keypoints)
+                sequence = sequence[:30]
+
+                if len(sequence) == 30:
+                    res = self.model.predict(np.expand_dims(sequence, axis=0))[0]
+                    print(self.actions[np.argmax(res)])
+
+                # Render to screen
+                cv2.imshow('OpenCV Feed', image)
+
+                if cv2.waitKey(10) & 0xFF == ord('q'):
+                    break
+            cap.release()
+            cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
     asl = ASL()
     # asl.run_cv()
     # asl.save_data()
-    asl.preprocess_data()
-    asl.train_lstm()
+    # asl.preprocess_data()
+    # asl.train_lstm()
+    asl.test()
