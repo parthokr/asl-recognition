@@ -16,6 +16,7 @@ mp_drawing = mp.solutions.drawing_utils
 
 class ASL:
     def __init__(self):
+        self.model = None
         self.y_test = None
         self.y_train = None
         self.x_test = None
@@ -145,7 +146,7 @@ class ASL:
         # print(np.array(features).shape)
 
         self.x = np.array(features)
-        self.y = to_categorical(labels)
+        self.y = to_categorical(labels).astype(int)
 
         self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x, self.y, test_size=0.05)
 
@@ -153,7 +154,23 @@ class ASL:
         # print(y)
 
     def train_lstm(self):
-        pass
+        log_dir = os.path.join("logs")
+        tb_callback = TensorBoard(log_dir=log_dir)
+
+        model = Sequential()
+        model.add(LSTM(64, return_sequences=True, activation='relu', input_shape=(30, 1662)))
+        model.add(LSTM(128, return_sequences=True, activation='relu'))
+        model.add(LSTM(64, return_sequences=False, activation='relu'))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dense(32, activation='relu'))
+        model.add(Dense(self.actions.shape[0], activation='softmax'))
+
+        model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
+        model.fit(self.x_train, self.y_train, epochs=2000, callbacks=[tb_callback])
+
+        print(model.summary())
+        self.model = model
 
 
 if __name__ == '__main__':
