@@ -29,7 +29,7 @@ class ASL:
         self.DATA_PATH = 'MP_Data'
         self.no_sequences = 30
         self.sequence_length = 30
-        self.start_folder = 0
+        self.start_folder = 30
 
         self.log_dir = os.path.join("logs")
         self.tb_callback = TensorBoard(log_dir=self.log_dir)
@@ -100,10 +100,17 @@ class ASL:
         return np.concatenate([pose, face, left_hand, right_hand])
 
     def save_data(self):
+        # for action in self.actions:
+        #     for sequence in range(self.no_sequences):
+        #         try:
+        #             os.makedirs(os.path.join(self.DATA_PATH, action, str(sequence)))
+        #         except:
+        #             pass
         for action in self.actions:
-            for sequence in range(self.no_sequences):
+            dirmax = np.max(np.array(os.listdir(os.path.join(self.DATA_PATH, action))).astype(int))
+            for sequence in range(1, self.no_sequences + 1):
                 try:
-                    os.makedirs(os.path.join(self.DATA_PATH, action, str(sequence)))
+                    os.makedirs(os.path.join(self.DATA_PATH, action, str(dirmax + sequence)))
                 except:
                     pass
 
@@ -233,7 +240,7 @@ class ASL:
 if __name__ == '__main__':
     asl = ASL()
     # asl.run_cv()
-    # asl.save_data()
+    asl.save_data()
     # asl.preprocess_data()
     # asl.train_lstm()
-    asl.test()
+    # asl.test()
