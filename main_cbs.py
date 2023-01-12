@@ -26,7 +26,7 @@ class ASL:
         self.x_train = None
         self.y = None
         self.x = None
-        self.actions = np.array([x for x in ascii_uppercase])
+        self.actions = np.array([x for x in ascii_uppercase[:3]])
         self.DATA_PATH = 'MP_Data_Kaggle'
         self.no_sequences = 30
         self.sequence_length = 30
@@ -57,8 +57,8 @@ class ASL:
 
     def draw_landmarks(self, image, results):
         # mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_CONTOURS)
-        # mp_drawing.draw_landmarks(image, results.pose_landmarks,
-        #                                mp_holistic.POSE_CONNECTIONS)  # Draw pose connections
+        mp_drawing.draw_landmarks(image, results.pose_landmarks,
+                                       mp_holistic.POSE_CONNECTIONS)  # Draw pose connections
         mp_drawing.draw_landmarks(image, results.left_hand_landmarks,
                                        mp_holistic.HAND_CONNECTIONS)  # Draw left hand connections
         mp_drawing.draw_landmarks(image, results.right_hand_landmarks,
@@ -92,8 +92,8 @@ class ASL:
         pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() \
             if results.pose_landmarks else np.zeros(33 * 4)
 
-        face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() \
-            if results.face_landmarks else np.zeros(468 * 3)
+        # face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() \
+        #     if results.face_landmarks else np.zeros(468 * 3)
 
         left_hand = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() \
             if results.left_hand_landmarks else np.zeros(21 * 3)
@@ -101,7 +101,7 @@ class ASL:
         right_hand = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() \
             if results.right_hand_landmarks else np.zeros(21 * 3)
 
-        return np.concatenate([pose, face, left_hand, right_hand])
+        return np.concatenate([pose, left_hand, right_hand])
 
     def save_data(self):
         # for action in self.actions:
@@ -220,7 +220,7 @@ class ASL:
     def train_lstm(self):
         self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
-        self.model.fit(self.x_train, self.y_train, epochs=2000, callbacks=[self.tb_callback])
+        self.model.fit(self.x_train, self.y_train, epochs=20000, callbacks=[self.tb_callback])
 
         self.model.save('action.h5')
 
@@ -240,11 +240,13 @@ class ASL:
             # Loop through actions
             for action in self.actions:
                 # Loop through video length aka sequence length
+                images = os.listdir(f"/Users/parthokr/Documents/Projects/asl-recognition/asl_dataset/{action.lower()}/")
+                print(images)
                 for frame_num in range(self.no_of_dataset_per_letter_in_kaggle):
                     # Read feed
                     # ret, frame = cap.read()
                     # Read from kagggle's dataset
-                    frame = cv2.imread(f"asl_dataset/{action.lower()}/hand1_{action.lower()}_bot_seg_1_cropped.jpeg")
+                    frame = cv2.imread(f"/Users/parthokr/Documents/Projects/asl-recognition/asl_dataset/{action.lower()}/{images[frame_num]}")
                     # Make detections
                     image, results = self.mediapipe_detection(frame, holistic)
 
@@ -306,6 +308,6 @@ if __name__ == '__main__':
     # asl.run_cv()
     # asl.save_data()
     asl.use_kaggle_dataset()
-    # asl.preprocess_data()
+    # asl.preprocess_kaggle_data()
     # asl.train_lstm()
     # asl.test()
