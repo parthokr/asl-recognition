@@ -9,6 +9,7 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.callbacks import TensorBoard
+from string import ascii_uppercase
 
 from sklearn.metrics import multilabel_confusion_matrix, accuracy_score
 
@@ -25,11 +26,13 @@ class ASL:
         self.x_train = None
         self.y = None
         self.x = None
-        self.actions = np.array(["A", "B", "C"])
-        self.DATA_PATH = 'MP_Data'
+        self.actions = np.array([x for x in ascii_uppercase])
+        self.DATA_PATH = 'MP_Data_Kaggle'
         self.no_sequences = 30
         self.sequence_length = 30
-        self.start_folder = 30
+        self.start_folder = 0
+
+        self.no_of_dataset_per_letter_in_kaggle = 70
 
         self.log_dir = os.path.join("logs")
         self.tb_callback = TensorBoard(log_dir=self.log_dir)
@@ -203,10 +206,37 @@ class ASL:
         pass
 
     def use_kaggle_dataset(self):
-        self.x = np.array(np.load("archive/X.npy"))
-        self.y = to_categorical(np.array(np.load("archive/Y.npy"))).astype(int)
+        for action in self.actions:
+            os.makedirs(os.path.join(self.DATA_PATH, action))
 
-        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x, self.y, test_size=0.05)
+        # Set mediapipe model
+        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+
+            # NEW LOOP
+            # Loop through actions
+            for action in self.actions:
+                # Loop through video length aka sequence length
+                for frame_num in range(self.no_of_dataset_per_letter_in_kaggle):
+                    # Read feed
+                    # ret, frame = cap.read()
+                    # Read from kagggle's dataset
+                    frame = cv2.imread(f"asl_dataset/{action.lower()}/hand1_{action.lower()}_bot_seg_1_cropped.jpeg")
+                    # Make detections
+                    image, results = self.mediapipe_detection(frame, holistic)
+
+                    # Draw landmarks
+                    self.draw_landmarks(image, results)
+
+                    # NEW Export keypoints
+                    keypoints = self.extract_keypoints(results)
+                    npy_path = os.path.join(self.DATA_PATH, action, str(frame_num))
+                    np.save(npy_path, keypoints)
+
+                    # Break gracefully
+                    if cv2.waitKey(10) & 0xFF == ord('q'):
+                        break
+
+            cv2.destroyAllWindows()
 
     def test(self):
         self.model.load_weights('action.h5')
@@ -250,7 +280,7 @@ if __name__ == '__main__':
     asl = ASL()
     # asl.run_cv()
     # asl.save_data()
-    # asl.preprocess_data()
     asl.use_kaggle_dataset()
-    asl.train_lstm()
+    # asl.preprocess_data()
+    # asl.train_lstm()
     # asl.test()
