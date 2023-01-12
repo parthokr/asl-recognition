@@ -74,8 +74,9 @@ class ASL:
                 cv2.imshow('OpeCV Feed', image)
                 try:
                     # print(f'pose: {len(results.pose_landmarks.landmark)}')
-                    print(f'lh: {len(results.left_hand_landmarks.landmark)}')
-                    print(f'rh: {len(results.right_hand_landmarks.landmark)}')
+                    print(results.pose_landmarks.landmark)
+                    # print(f'lh: {len(results.left_hand_landmarks.landmark)}')
+                    # print(f'rh: {len(results.right_hand_landmarks.landmark)}')
                 except:
                     pass
                 if cv2.waitKey(10) & 0xFF == ord('q'):
@@ -192,12 +193,20 @@ class ASL:
     def train_lstm(self):
         self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
-        self.model.fit(self.x_train, self.y_train, epochs=2000, callbacks=[tb_callback])
+        self.model.fit(self.x_train, self.y_train, epochs=2000, callbacks=[self.tb_callback])
+
+        self.model.save('action.h5')
 
         print(self.model.summary())
 
     def eval_using_confusion_matrix(self):
         pass
+
+    def use_kaggle_dataset(self):
+        self.x = np.array(np.load("archive/X.npy"))
+        self.y = to_categorical(np.array(np.load("archive/Y.npy"))).astype(int)
+
+        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x, self.y, test_size=0.05)
 
     def test(self):
         self.model.load_weights('action.h5')
@@ -240,7 +249,8 @@ class ASL:
 if __name__ == '__main__':
     asl = ASL()
     # asl.run_cv()
-    asl.save_data()
+    # asl.save_data()
     # asl.preprocess_data()
-    # asl.train_lstm()
+    asl.use_kaggle_dataset()
+    asl.train_lstm()
     # asl.test()
