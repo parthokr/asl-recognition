@@ -56,9 +56,9 @@ class ASL:
         return image, result
 
     def draw_landmarks(self, image, results):
-        mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_CONTOURS)
-        mp_drawing.draw_landmarks(image, results.pose_landmarks,
-                                       mp_holistic.POSE_CONNECTIONS)  # Draw pose connections
+        # mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_CONTOURS)
+        # mp_drawing.draw_landmarks(image, results.pose_landmarks,
+        #                                mp_holistic.POSE_CONNECTIONS)  # Draw pose connections
         mp_drawing.draw_landmarks(image, results.left_hand_landmarks,
                                        mp_holistic.HAND_CONNECTIONS)  # Draw left hand connections
         mp_drawing.draw_landmarks(image, results.right_hand_landmarks,
@@ -193,6 +193,30 @@ class ASL:
         # print(x)
         # print(y)
 
+    def preprocess_kaggle_data(self):
+        label_map = {label: num for num, label in enumerate(self.actions)}
+        # print(label_map)
+        features, labels = [], []
+        for action in self.actions:
+            window = []
+            for frame_num in range(self.no_of_dataset_per_letter_in_kaggle):
+                res = np.load(os.path.join(self.DATA_PATH, action, f"{frame_num}.npy"))
+                window.append(res)
+            features.append(window)
+            labels.append(label_map[action])
+
+        # print(labels)
+        # print(len(labels))
+        # print(np.array(features).shape)
+
+        self.x = np.array(features)
+        self.y = to_categorical(labels).astype(int)
+
+        self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(self.x, self.y, test_size=0.05)
+
+        # print(x)
+        # print(y)
+
     def train_lstm(self):
         self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
@@ -229,6 +253,7 @@ class ASL:
 
                     # NEW Export keypoints
                     keypoints = self.extract_keypoints(results)
+                    print(keypoints)
                     npy_path = os.path.join(self.DATA_PATH, action, str(frame_num))
                     np.save(npy_path, keypoints)
 
