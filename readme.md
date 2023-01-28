@@ -29,6 +29,10 @@ Potential solution
 > Upgrade numpy via
 > ``pip install numpy --upgrade``
 
-2. 
+2. tensorflow.python.framework.errors_impl.notfounderror: graph execution error:
+---
+Potential solution
+> Downgrade tensorflow-macos to 2.9 and tensorflow-metal to 0.5.0
+> More on [https://developer.apple.com/forums/thread/721619](https://developer.apple.com/forums/thread/721619)
 
 
