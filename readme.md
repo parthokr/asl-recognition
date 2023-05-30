@@ -36,5 +36,6 @@ Potential solution
 ---
 # Final notes for evaluation
 Please switch to `submission` branch for the final submission.
+You may open kaggle [`notebook`](https://www.kaggle.com/code/nayeemrocks22/asl-recognition/notebook) and run the code there.
 
 
