@@ -1,3 +1,9 @@
+# Final notes for evaluation
+~~Please switch to [`submission`](https://github.com/parthokr/asl-recognition/tree/submission) branch for the final submission.~~
+
+You may open kaggle [`notebook`](https://www.kaggle.com/code/nayeemrocks22/asl-recognition/notebook) and run the code there.
+---
+
 ## How to get environment set up on apple silicon?
 
 Have a look [here](https://developer.apple.com/metal/tensorflow-plugin/)
@@ -32,11 +38,5 @@ Other regular packages can be installed through **requirements.txt** using pip's
 Potential solution
 > Upgrade numpy via
 > ``pip install numpy --upgrade``
-
----
-# Final notes for evaluation
-~~Please switch to [`submission`](https://github.com/parthokr/asl-recognition/tree/submission) branch for the final submission.~~
-
-You may open kaggle [`notebook`](https://www.kaggle.com/code/nayeemrocks22/asl-recognition/notebook) and run the code there.
 
 
