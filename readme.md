@@ -35,6 +35,6 @@ Potential solution
 
 ---
 # Final notes for evaluation
-Please switch to `submission` branch for the final submission.
+Please switch to [https://github.com/parthokr/asl-recognition/tree/submission](`submission`) branch for the final submission.
 
 
