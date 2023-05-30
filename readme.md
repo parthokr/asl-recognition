@@ -33,6 +33,8 @@ Potential solution
 > Upgrade numpy via
 > ``pip install numpy --upgrade``
 
-2. 
+---
+# Final notes for evaluation
+Please switch to `submission` branch for the final submission.
 
 
